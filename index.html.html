@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세홍 — 게임 기획자 포트폴리오</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080c14;
+            --surface: #0f1624;
+            --surface2: #161f30;
+            --border: rgba(255,255,255,0.06);
+            --primary: #00e5ff;
+            --secondary: #7c3aed;
+            --accent: #f59e0b;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --font-pixel: 'DotGothic16', monospace;
+            --font-body: 'Noto Sans KR', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font-body); overflow-x: hidden; line-height: 1.6; }
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+
+        /* ─── Scanline overlay ─── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ─── Grid texture ─── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            padding: 18px 0;
+            transition: 0.4s;
+        }
+        nav.scrolled {
+            background: rgba(8,12,20,0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-logo { font-family: var(--font-pixel); font-size: 1.1rem; color: var(--primary); letter-spacing: 0.05em; }
+        .nav-logo span { color: var(--accent); }
+        .nav-links { display: flex; gap: 32px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+        .nav-links a:hover { color: var(--primary); }
+
+        /* ─── HERO ─── */
+        #hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            padding: 80px 24px 60px;
+            z-index: 1;
+        }
+
+        .hero-eyebrow {
+            font-family: var(--font-pixel);
+            font-size: 0.75rem;
+            color: var(--primary);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: fadeUp 0.8s 0.2s forwards;
+        }
+        .hero-eyebrow::before { content: '▶ '; }
+
+        #hero h1 {
+            font-size: clamp(2.4rem, 7vw, 5.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: fadeUp 0.8s 0.4s forwards;
+        }
+        .line1 { display: block; color: #fff; }
+        .line2 { display: block; color: var(--primary); font-family: var(--font-pixel); font-size: clamp(1.4rem, 4vw, 3rem); margin-top: 8px; letter-spacing: 0.04em; }
+
+        .hero-sub {
+            font-size: 1rem;
+            color: var(--muted);
+            max-width: 540px;
+            margin-bottom: 40px;
+            opacity: 0;
+            animation: fadeUp 0.8s 0.6s forwards;
+        }
+
+        .hero-btns {
+            display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+            opacity: 0;
+            animation: fadeUp 0.8s 0.8s forwards;
+        }
+        .btn-primary {
+            padding: 14px 30px;
+            background: var(--primary);
+            color: #000;
+            font-weight: 900;
+            font-size: 0.85rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+        }
+        .btn-primary:hover { background: #fff; transform: translateY(-2px); }
+        .btn-outline {
+            padding: 14px 30px;
+            background: transparent;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: 1px solid var(--primary);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-outline:hover { background: rgba(0,229,255,0.08); }
+
+        /* scroll indicator */
+        .scroll-hint {
+            position: absolute; bottom: 32px;
+            font-family: var(--font-pixel);
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            animation: blink 1.4s infinite;
+        }
+        @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+
+        /* ─── SECTION COMMON ─── */
+        section { position: relative; z-index: 1; }
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 100px 24px; }
+        .sec-label {
+            font-family: var(--font-pixel);
+            font-size: 0.7rem;
+            color: var(--primary);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .sec-label::before { content: '// '; }
+        .sec-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #fff; margin-bottom: 60px; letter-spacing: -0.02em; }
+
+        /* reveal */
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.16,1,0.3,1); }
+        .reveal.on { opacity: 1; transform: translateY(0); }
+
+        /* ─── ABOUT ─── */
+        #about { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+        .about-text p { color: var(--muted); font-size: 1rem; line-height: 1.9; margin-bottom: 16px; }
+        .about-text strong { color: var(--text); }
+
+        .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 32px; }
+        .stat-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+        .stat-box .num { font-family: var(--font-pixel); font-size: 1.6rem; color: var(--primary); }
+        .stat-box .desc { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+        .tags-wrap { display: flex; flex-wrap: wrap; gap: 10px; }
+        .tag {
+            padding: 8px 16px;
+            background: rgba(124,58,237,0.12);
+            border: 1px solid rgba(124,58,237,0.3);
+            font-size: 0.8rem;
+            color: #a78bfa;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+        .tag.cyan { background: rgba(0,229,255,0.08); border-color: rgba(0,229,255,0.25); color: var(--primary); }
+        .tag.amber { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); color: var(--accent); }
+
+        .id-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            position: relative;
+        }
+        .id-card::before {
+            content: 'GAME DESIGNER';
+            position: absolute; top: 16px; right: 16px;
+            font-family: var(--font-pixel);
+            font-size: 0.6rem;
+            color: var(--primary);
+            opacity: 0.5;
+        }
+        .id-avatar {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-pixel);
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .id-name { font-size: 1.4rem; font-weight: 900; color: #fff; margin-bottom: 4px; }
+        .id-role { font-family: var(--font-pixel); font-size: 0.7rem; color: var(--primary); margin-bottom: 20px; }
+        .id-rows { border-top: 1px solid var(--border); padding-top: 20px; }
+        .id-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 6px 0; border-bottom: 1px solid var(--border); }
+        .id-row .k { color: var(--muted); }
+        .id-row .v { color: var(--text); font-weight: 700; }
+
+        /* ─── SKILLS ─── */
+        #skills { background: var(--bg); }
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .skill-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 28px;
+            transition: 0.3s;
+        }
+        .skill-card:hover { border-color: rgba(0,229,255,0.25); transform: translateY(-4px); }
+        .skill-card-icon { font-family: var(--font-pixel); font-size: 1.4rem; color: var(--primary); margin-bottom: 14px; }
+        .skill-card h3 { font-size: 0.9rem; font-weight: 900; color: #fff; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 18px; }
+        .skill-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.85rem; }
+        .skill-item span:first-child { color: var(--muted); }
+        .skill-badge { font-family: var(--font-pixel); font-size: 0.65rem; color: var(--primary); background: rgba(0,229,255,0.08); padding: 3px 8px; border: 1px solid rgba(0,229,255,0.2); }
+        .skill-badge.mid { color: var(--accent); background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); }
+
+        /* ─── PROJECTS ─── */
+        #projects { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .category-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 48px; }
+        .tab-btn {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: var(--font-pixel);
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab-btn:hover, .tab-btn.active { border-color: var(--primary); color: var(--primary); background: rgba(0,229,255,0.05); }
+
+        .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .proj-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .proj-card::after {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: var(--primary);
+            transform: scaleY(0);
+            transform-origin: bottom;
+            transition: 0.3s;
+        }
+        .proj-card:hover::after { transform: scaleY(1); }
+        .proj-card:hover { border-color: rgba(0,229,255,0.2); transform: translateY(-4px); }
+        .proj-num { font-family: var(--font-pixel); font-size: 0.7rem; color: var(--muted); margin-bottom: 14px; }
+        .proj-card-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            font-family: var(--font-pixel);
+            font-size: 0.65rem;
+            color: var(--accent);
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.2);
+            margin-bottom: 14px;
+        }
+        .proj-card h3 { font-size: 1.1rem; font-weight: 900; color: #fff; margin-bottom: 12px; line-height: 1.4; }
+        .proj-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.8; margin-bottom: 24px; }
+        .proj-arrow { font-family: var(--font-pixel); font-size: 0.7rem; color: var(--primary); letter-spacing: 0.1em; }
+
+        /* WIP card */
+        .proj-card.wip { opacity: 0.5; pointer-events: none; }
+        .proj-card.wip::before {
+            content: 'WIP';
+            position: absolute; top: 16px; right: 16px;
+            font-family: var(--font-pixel);
+            font-size: 0.65rem;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+        }
+
+        /* ─── CONTACT ─── */
+        #contact { background: var(--bg); }
+        .contact-inner { text-align: center; max-width: 680px; margin: 0 auto; }
+        .contact-inner h2 { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900; color: #fff; margin-bottom: 20px; letter-spacing: -0.02em; }
+        .contact-inner p { color: var(--muted); font-size: 1rem; line-height: 1.9; margin-bottom: 40px; }
+        .contact-links { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 60px; }
+
+        .contact-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 60px; }
+        .contact-item { background: var(--surface); padding: 24px 20px; text-align: center; }
+        .contact-item .label { font-family: var(--font-pixel); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+        .contact-item .value { font-size: 0.85rem; color: var(--text); font-weight: 700; }
+
+        footer { border-top: 1px solid var(--border); padding: 24px; text-align: center; }
+        footer p { font-family: var(--font-pixel); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; }
+
+        /* ─── ANIMATIONS ─── */
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ─── MOBILE ─── */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .about-grid { grid-template-columns: 1fr; gap: 40px; }
+            .stat-row { grid-template-columns: repeat(3,1fr); gap: 10px; }
+            .contact-grid { grid-template-columns: 1fr; }
+            .hero-btns { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+    <div class="nav-inner">
+        <div class="nav-logo">세홍<span>.GDD</span></div>
+        <div class="nav-links">
+            <a href="#about">About</a>
+            <a href="#skills">Skills</a>
+            <a href="#projects">Works</a>
+            <a href="#contact">Contact</a>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+    <p class="hero-eyebrow">Game Planner Portfolio</p>
+    <h1>
+        <span class="line1">감정을 설계하는</span>
+        <span class="line2">콘텐츠 기획자</span>
+    </h1>
+    <p class="hero-sub">
+        플레이어의 감정 곡선을 그리고,<br>
+        경험을 구조로 번역하는 게임 기획자입니다.
+    </p>
+    <div class="hero-btns">
+        <a href="#projects" class="btn-primary">포트폴리오 보기 →</a>
+        <a href="#contact" class="btn-outline">Contact</a>
+    </div>
+    <p class="scroll-hint">▼ scroll</p>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+    <div class="wrap">
+        <div class="reveal">
+            <p class="sec-label">about me</p>
+            <h2 class="sec-title">저는 이런 기획자입니다.</h2>
+        </div>
+        <div class="about-grid reveal">
+            <div>
+                <div class="about-text">
+                    <p>
+                        콘텐츠 기획을 중심으로, <strong>플레이어가 '왜 재미있었는지'를 구조적으로 분해</strong>하는 것을 좋아합니다. 게임의 감정 흐름을 설계하고, 수치와 구조로 경험을 만들어내는 과정에 매료되어 있습니다.
+                    </p>
+                    <p>
+                        현재 2인칭 탑뷰 액션 RPG <strong>HuntingChef</strong> 프로젝트를 팀으로 개발 중이며, Unity를 기반으로 실전 기획 경험을 쌓고 있습니다.
+                    </p>
+                    <div class="stat-row">
+                        <div class="stat-box">
+                            <div class="num">2년</div>
+                            <div class="desc">전문대 재학</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="num">5인</div>
+                            <div class="desc">팀 협업</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="num">1+</div>
+                            <div class="desc">개발 프로젝트</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="id-card" style="margin-bottom:24px;">
+                    <div class="id-avatar">SH</div>
+                    <div class="id-name">세홍</div>
+                    <div class="id-role">// Content Planner</div>
+                    <div class="id-rows">
+                        <div class="id-row"><span class="k">포지션</span><span class="v">게임 기획자</span></div>
+                        <div class="id-row"><span class="k">분야</span><span class="v">콘텐츠 기획</span></div>
+                        <div class="id-row"><span class="k">엔진</span><span class="v">Unity 2D</span></div>
+                        <div class="id-row"><span class="k">상태</span><span class="v">구직중 🟢</span></div>
+                    </div>
+                </div>
+                <div class="tags-wrap">
+                    <span class="tag cyan">#콘텐츠기획</span>
+                    <span class="tag cyan">#보상사이클설계</span>
+                    <span class="tag">#감정설계</span>
+                    <span class="tag">#역기획</span>
+                    <span class="tag amber">#Unity2D</span>
+                    <span class="tag amber">#HuntingChef</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills">
+    <div class="wrap">
+        <div class="reveal">
+            <p class="sec-label">skills &amp; tools</p>
+            <h2 class="sec-title">사용 가능한 도구들</h2>
+        </div>
+        <div class="skills-grid reveal">
+            <div class="skill-card">
+                <div class="skill-card-icon">[ 기획 ]</div>
+                <h3>Game Planning</h3>
+                <div class="skill-item"><span>콘텐츠 기획</span><span class="skill-badge">High</span></div>
+                <div class="skill-item"><span>보상 사이클 설계</span><span class="skill-badge">High</span></div>
+                <div class="skill-item"><span>역기획서 작성</span><span class="skill-badge">High</span></div>
+                <div class="skill-item"><span>전투 시스템 설계</span><span class="skill-badge mid">Mid</span></div>
+                <div class="skill-item"><span>데이터 테이블 설계</span><span class="skill-badge mid">Mid</span></div>
+            </div>
+            <div class="skill-card">
+                <div class="skill-card-icon">[ 개발 ]</div>
+                <h3>Development</h3>
+                <div class="skill-item"><span>Unity 2D (C#)</span><span class="skill-badge mid">Mid</span></div>
+                <div class="skill-item"><span>Python</span><span class="skill-badge mid">Mid</span></div>
+                <div class="skill-item"><span>Java</span><span class="skill-badge mid">Mid</span></div>
+                <div class="skill-item"><span>C++</span><span class="skill-badge mid">Mid</span></div>
+                <div class="skill-item"><span>GitHub / Git</span><span class="skill-badge mid">Mid</span></div>
+            </div>
+            <div class="skill-card">
+                <div class="skill-card-icon">[ 디자인 ]</div>
+                <h3>Design & Docs</h3>
+                <div class="skill-item"><span>Figma</span><span class="skill-badge mid">Mid</span></div>
+                <div class="skill-item"><span>Photoshop</span><span class="skill-badge mid">Mid</span></div>
+                <div class="skill-item"><span>PPT / Notion</span><span class="skill-badge">High</span></div>
+                <div class="skill-item"><span>GDD 작성</span><span class="skill-badge">High</span></div>
+                <div class="skill-item"><span>픽셀 아트 이해</span><span class="skill-badge mid">Mid</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PROJECTS -->
+<section id="projects">
+    <div class="wrap">
+        <div class="reveal">
+            <p class="sec-label">selected works</p>
+            <h2 class="sec-title">포트폴리오</h2>
+        </div>
+        <div class="category-tabs reveal">
+            <button class="tab-btn active" onclick="filterCards('all', this)">ALL</button>
+            <button class="tab-btn" onclick="filterCards('content', this)">콘텐츠 기획</button>
+            <button class="tab-btn" onclick="filterCards('reverse', this)">역기획</button>
+            <button class="tab-btn" onclick="filterCards('system', this)">시스템 기획</button>
+        </div>
+
+        <div class="projects-grid" id="proj-grid">
+
+            <!-- 카드 1 -->
+            <div class="proj-card reveal" data-cat="reverse">
+                <div class="proj-num">01</div>
+                <span class="proj-card-tag">역기획</span>
+                <h3>Stardew Valley<br>광산 시스템 역기획서</h3>
+                <p>감정 곡선, 보상 주기, 위험-보상 구조를 분석하여 광산 콘텐츠를 9슬라이드로 분해했습니다.</p>
+                <div class="proj-arrow">CASE STUDY →</div>
+            </div>
+
+            <!-- 카드 2 -->
+            <div class="proj-card reveal" data-cat="content">
+                <div class="proj-num">02</div>
+                <span class="proj-card-tag">콘텐츠 기획</span>
+                <h3>HuntingChef<br>콘텐츠 구조 설계</h3>
+                <p>2D 탑뷰 액션 RPG HuntingChef의 퀘스트 흐름, 보상 주기, 콘텐츠 진행 구조를 기획했습니다.</p>
+                <div class="proj-arrow">CASE STUDY →</div>
+            </div>
+
+            <!-- 카드 3 -->
+            <div class="proj-card reveal" data-cat="system">
+                <div class="proj-num">03</div>
+                <span class="proj-card-tag">시스템 기획</span>
+                <h3>전투 시스템 설계<br>히트박스 & 무적 프레임</h3>
+                <p>히트박스/허트박스 분리, 무적 프레임, 스킬 데이터 테이블을 포함한 전투 구조 문서를 작성했습니다.</p>
+                <div class="proj-arrow">CASE STUDY →</div>
+            </div>
+
+            <!-- 카드 4 (WIP) -->
+            <div class="proj-card wip reveal" data-cat="content">
+                <div class="proj-num">04</div>
+                <span class="proj-card-tag">콘텐츠 기획</span>
+                <h3>보스 패턴 및<br>챕터 구성 기획</h3>
+                <p>HuntingChef 보스 단계별 패턴과 챕터 흐름을 기획 중입니다.</p>
+                <div class="proj-arrow">COMING SOON</div>
+            </div>
+
+            <!-- 카드 5 (WIP) -->
+            <div class="proj-card wip reveal" data-cat="system">
+                <div class="proj-num">05</div>
+                <span class="proj-card-tag">시스템 기획</span>
+                <h3>인벤토리 &amp; 아이템<br>데이터 관리 시스템</h3>
+                <p>Unity CSV 기반 아이템 데이터 로더 및 인벤토리 구조 기획.</p>
+                <div class="proj-arrow">COMING SOON</div>
+            </div>
+
+            <!-- 카드 6 (WIP) -->
+            <div class="proj-card wip reveal" data-cat="reverse">
+                <div class="proj-num">06</div>
+                <span class="proj-card-tag">역기획</span>
+                <h3>신규 역기획 프로젝트<br>(작성 예정)</h3>
+                <p>현재 준비 중인 역기획 문서입니다.</p>
+                <div class="proj-arrow">COMING SOON</div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+    <div class="wrap">
+        <div class="contact-inner reveal">
+            <p class="sec-label">get in touch</p>
+            <h2>함께 게임을<br>만들어볼까요?</h2>
+            <p>
+                콘텐츠 기획자로서 팀 합류, 프로젝트 협업, 커피챗 모두 환영합니다.<br>
+                작은 연락 하나가 큰 프로젝트의 시작이 됩니다.
+            </p>
+            <div class="contact-links">
+                <a href="mailto:paullim0411@gmail.com" class="btn-primary">이메일 보내기 →</a>
+                <a href="#" class="btn-outline">이력서 다운로드</a>
+            </div>
+        </div>
+
+        <div class="contact-grid reveal">
+            <div class="contact-item">
+                <div class="label">GitHub</div>
+                <div class="value">Kessoku-Archive</div>
+            </div>
+            <div class="contact-item">
+                <div class="label">Email</div>
+                <div class="value">paullim0411@gmail.com</div>
+            </div>
+            <div class="contact-item">
+                <div class="label">Status</div>
+                <div class="value" style="color:var(--primary);">구직 중 🟢</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>© 2025 세홍 — GAME PLANNER PORTFOLIO // ALL RIGHTS RESERVED</p>
+</footer>
+
+<script>
+    // Nav scroll effect
+    window.addEventListener('scroll', () => {
+        document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Reveal on scroll
+    const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+    // Category filter
+    function filterCards(cat, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.proj-card').forEach(card => {
+            const cats = card.dataset.cat || '';
+            card.style.display = (cat === 'all' || cats.includes(cat)) ? 'block' : 'none';
+        });
+    }
+</script>
+</body>
+</html>
